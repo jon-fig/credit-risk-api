@@ -1,0 +1,2 @@
+# Trata o arquivo HTML em static/ como documentação, para que não seja contabilizado nas estatísticas de linguagem do repositório.
+src/static/* linguist-documentation
