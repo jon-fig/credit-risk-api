@@ -1,0 +1,52 @@
+# Controle de versão, agentes e editores
+.git
+.gitignore
+.github
+.vscode
+.idea
+.history
+.freebuff
+agents.md
+instructions.md
+
+# Python e caches de build
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Testes e ferramentas de análise (não vão para a imagem)
+tests/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Bancos SQLite locais e arquivos temporários do SQLite
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+data/*.db*
+
+# Segredos e configuração local
+.env
+.env.*
+
+# Relatórios gerados pelo treino
+reports/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini

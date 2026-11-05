@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Avaliação de Risco de Crédito</title>
+    <meta
+      name="description"
+      content="Simule a probabilidade de inadimplência de um proponente usando o modelo de risco de crédito."
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Remove as setas nativas dos campos numéricos para um visual mais limpo */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen bg-slate-100 text-slate-800 antialiased">
+    <header class="border-b border-slate-200 bg-white">
+      <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span
+              class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white"
+              aria-hidden="true"
+              >CR</span
+            >
+            <div>
+              <h1 class="text-xl font-semibold tracking-tight text-slate-900">
+                Avaliação de Risco de Crédito
+              </h1>
+              <p class="text-sm text-slate-500">
+                Estime a probabilidade de inadimplência de um proponente.
+              </p>
+            </div>
+          </div>
+          <a
+            href="/docs"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >Documentação da API</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <!-- ============================== FORMULÁRIO ============================== -->
+        <section class="lg:col-span-3">
+          <form
+            id="credit-form"
+            novalidate
+            class="rounded-2xl border border-slate-200 bg-white shadow-sm"
+          >
+            <div class="border-b border-slate-200 px-5 py-4 sm:px-6">
+              <h2 class="text-base font-semibold text-slate-900">Dados do proponente</h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Preencha os campos abaixo. Os valores já vêm com um exemplo pronto para teste.
+              </p>
+            </div>
+
+            <div id="form-alert" class="mx-5 mt-4 hidden rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700 sm:mx-6" role="alert"></div>
+
+            <!-- Dados pessoais -->
+            <fieldset class="px-5 py-5 sm:px-6">
+              <legend class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Dados pessoais
+              </legend>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="age" class="block text-sm font-medium text-slate-700">Idade (anos)</label>
+                  <input
+                    id="age"
+                    name="age"
+                    type="number"
+                    step="1"
+                    min="18"
+                    max="110"
+                    value="45"
+                    data-label="Idade (anos)"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">Entre 18 e 110 anos.</p>
+                </div>
+
+                <div>
+                  <label for="MonthlyIncome" class="block text-sm font-medium text-slate-700"
+                    >Renda Mensal (R$) <span class="font-normal text-slate-400">— opcional</span></label
+                  >
+                  <input
+                    id="MonthlyIncome"
+                    name="MonthlyIncome"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value="6800"
+                    placeholder="Ex.: 6800,00"
+                    data-label="Renda Mensal (R$)"
+                    data-optional="true"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">Se ficar em branco, usamos a mediana do treino.</p>
+                </div>
+
+                <div>
+                  <label for="NumberOfDependents" class="block text-sm font-medium text-slate-700"
+                    >Dependentes <span class="font-normal text-slate-400">— opcional</span></label
+                  >
+                  <input
+                    id="NumberOfDependents"
+                    name="NumberOfDependents"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value="2"
+                    placeholder="Ex.: 2"
+                    data-label="Dependentes"
+                    data-optional="true"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">Pessoas que dependem da renda informada.</p>
+                </div>
+
+                <div>
+                  <label for="DebtRatio" class="block text-sm font-medium text-slate-700"
+                    >Razão de Endividamento</label
+                  >
+                  <input
+                    id="DebtRatio"
+                    name="DebtRatio"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value="0.8"
+                    data-label="Razão de Endividamento"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">
+                    Dívidas mensais divididas pela renda. Ex.: 0,80 = 80% da renda comprometida.
+                  </p>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Histórico de crédito -->
+            <fieldset class="border-t border-slate-200 px-5 py-5 sm:px-6">
+              <legend class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Histórico de crédito
+              </legend>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    for="RevolvingUtilizationOfUnsecuredLines"
+                    class="block text-sm font-medium text-slate-700"
+                    >Uso do Limite de Crédito Rotativo</label
+                  >
+                  <input
+                    id="RevolvingUtilizationOfUnsecuredLines"
+                    name="RevolvingUtilizationOfUnsecuredLines"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value="0.77"
+                    data-label="Uso do Limite de Crédito Rotativo"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">
+                    Parte do limite rotativo já utilizada. Ex.: 0,77 = 77%.
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    for="NumberOfTime30-59DaysPastDueNotWorse"
+                    class="block text-sm font-medium text-slate-700"
+                    >Atrasos de 30 a 59 dias</label
+                  >
+                  <input
+                    id="NumberOfTime30-59DaysPastDueNotWorse"
+                    name="NumberOfTime30-59DaysPastDueNotWorse"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value="0"
+                    data-label="Atrasos de 30 a 59 dias"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">Quantas vezes o cliente atrasou nessa faixa.</p>
+                </div>
+
+                <div>
+                  <label for="NumberOfTime60-89DaysPastDueNotWorse" class="block text-sm font-medium text-slate-700"
+                    >Atrasos de 60 a 89 dias</label
+                  >
+                  <input
+                    id="NumberOfTime60-89DaysPastDueNotWorse"
+                    name="NumberOfTime60-89DaysPastDueNotWorse"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value="0"
+                    data-label="Atrasos de 60 a 89 dias"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">Atrasos mais longos indicam risco maior.</p>
+                </div>
+
+                <div>
+                  <label for="NumberOfTimes90DaysLate" class="block text-sm font-medium text-slate-700"
+                    >Atrasos de 90 dias ou mais</label
+                  >
+                  <input
+                    id="NumberOfTimes90DaysLate"
+                    name="NumberOfTimes90DaysLate"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value="0"
+                    data-label="Atrasos de 90 dias ou mais"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">Atrasos graves, acima de três meses.</p>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Situação financeira -->
+            <fieldset class="border-t border-slate-200 px-5 py-5 sm:px-6">
+              <legend class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Situação financeira
+              </legend>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="NumberOfOpenCreditLinesAndLoans" class="block text-sm font-medium text-slate-700"
+                    >Linhas de Crédito e Empréstimos Abertos</label
+                  >
+                  <input
+                    id="NumberOfOpenCreditLinesAndLoans"
+                    name="NumberOfOpenCreditLinesAndLoans"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value="9"
+                    data-label="Linhas de Crédito e Empréstimos Abertos"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">Cartões, cheque especial, empréstimos etc.</p>
+                </div>
+
+                <div>
+                  <label for="NumberRealEstateLoansOrLines" class="block text-sm font-medium text-slate-700"
+                    >Empréstimos Imobiliários</label
+                  >
+                  <input
+                    id="NumberRealEstateLoansOrLines"
+                    name="NumberRealEstateLoansOrLines"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value="1"
+                    data-label="Empréstimos Imobiliários"
+                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">Financiamentos ou linhas imobiliárias ativos.</p>
+                </div>
+              </div>
+            </fieldset>
+
+            <div
+              class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-6"
+            >
+              <button
+                type="reset"
+                class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              >
+                Restaurar exemplo
+              </button>
+              <button
+                id="submit-btn"
+                type="submit"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <svg
+                  id="spinner"
+                  class="hidden h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span id="submit-label">Calcular risco</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ============================== RESULTADO ============================== -->
+        <aside class="lg:col-span-2">
+          <div class="rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-6">
+            <div class="border-b border-slate-200 px-5 py-4">
+              <h2 class="text-base font-semibold text-slate-900">Resultado da avaliação</h2>
+            </div>
+
+            <!-- Estado inicial -->
+            <div id="result-empty" class="px-5 py-10 text-center">
+              <div
+                class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400"
+                aria-hidden="true"
+              >
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01" />
+                  <circle cx="12" cy="12" r="9" />
+                </svg>
+              </div>
+              <p class="mt-3 text-sm font-medium text-slate-700">Aguardando dados</p>
+              <p class="mt-1 text-sm text-slate-500">
+                Preencha o formulário e clique em <span class="font-medium">Calcular risco</span> para
+                ver a probabilidade de inadimplência.
+              </p>
+            </div>
+
+            <!-- Resultado -->
+            <div id="result-content" class="hidden px-5 py-6" aria-live="polite">
+              <span
+                id="risk-badge"
+                class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold"
+              >
+                <span id="risk-dot" class="h-2 w-2 rounded-full" aria-hidden="true"></span>
+                <span id="risk-badge-text">—</span>
+              </span>
+
+              <p class="mt-4 text-sm font-medium text-slate-500">Probabilidade de inadimplência</p>
+              <p id="prob-value" class="mt-1 text-4xl font-bold tracking-tight text-slate-900">0,00%</p>
+
+              <div
+                class="mt-3 h-3 w-full overflow-hidden rounded-full bg-slate-200"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                id="prob-track"
+              >
+                <div
+                  id="prob-bar"
+                  class="h-3 rounded-full bg-emerald-500 transition-all duration-500"
+                  style="width: 0%"
+                ></div>
+              </div>
+              <p id="risk-description" class="mt-3 text-sm text-slate-600"></p>
+
+              <dl class="mt-6 space-y-3 border-t border-slate-200 pt-4 text-sm">
+                <div class="flex items-center justify-between gap-4">
+                  <dt class="text-slate-500">ID do registro</dt>
+                  <dd id="rec-id" class="font-medium text-slate-900">—</dd>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <dt class="text-slate-500">Data e hora</dt>
+                  <dd id="rec-time" class="font-medium text-slate-900">—</dd>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <dt class="text-slate-500">Limiar de decisão</dt>
+                  <dd id="rec-threshold" class="font-medium text-slate-900">0,50</dd>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <dt class="text-slate-500">Modelo</dt>
+                  <dd id="rec-model" class="font-medium text-slate-900">—</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div class="border-t border-slate-200 bg-slate-50 px-5 py-3">
+              <p class="text-xs text-slate-500">
+                Probabilidades iguais ou superiores ao limiar classificam o proponente como
+                inadimplente (alto risco) e são registradas no banco de dados.
+              </p>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============================== HISTÓRICO ============================== -->
+      <section class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Últimas avaliações</h2>
+            <p class="mt-1 text-sm text-slate-500">Registros salvos no banco de dados SQLite.</p>
+          </div>
+          <button
+            id="refresh-history"
+            type="button"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Atualizar
+          </button>
+        </div>
+
+        <div id="history-empty" class="px-5 py-8 text-center text-sm text-slate-500 sm:px-6">
+          Nenhuma avaliação registrada ainda.
+        </div>
+
+        <div id="history-wrapper" class="hidden overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th scope="col" class="px-5 py-3 sm:px-6">ID</th>
+                <th scope="col" class="px-5 py-3">Data e hora</th>
+                <th scope="col" class="px-5 py-3">Probabilidade</th>
+                <th scope="col" class="px-5 py-3 sm:pr-6">Classificação</th>
+              </tr>
+            </thead>
+            <tbody id="history-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mx-auto max-w-6xl px-4 pb-10 text-center text-xs text-slate-500 sm:px-6">
+      Modelo de risco de crédito · API com FastAPI · documentação em <a class="underline decoration-slate-300 underline-offset-2 hover:text-slate-700" href="/docs">/docs</a>
+    </footer>
+
+    <noscript>
+      <p class="mx-auto max-w-6xl px-4 pb-8 text-sm text-rose-700 sm:px-6">
+        Esta página precisa de JavaScript habilitado para calcular o risco.
+      </p>
+    </noscript>
+
+    <script>
+      const form = document.getElementById("credit-form");
+      const inputs = Array.from(form.querySelectorAll("input[data-label]"));
+      const submitBtn = document.getElementById("submit-btn");
+      const submitLabel = document.getElementById("submit-label");
+      const spinner = document.getElementById("spinner");
+      const alertBox = document.getElementById("form-alert");
+
+      const resultEmpty = document.getElementById("result-empty");
+      const resultContent = document.getElementById("result-content");
+      const riskBadge = document.getElementById("risk-badge");
+      const riskDot = document.getElementById("risk-dot");
+      const riskBadgeText = document.getElementById("risk-badge-text");
+      const probValue = document.getElementById("prob-value");
+      const probBar = document.getElementById("prob-bar");
+      const probTrack = document.getElementById("prob-track");
+      const riskDescription = document.getElementById("risk-description");
+      const recId = document.getElementById("rec-id");
+      const recTime = document.getElementById("rec-time");
+      const recThreshold = document.getElementById("rec-threshold");
+      const recModel = document.getElementById("rec-model");
+      const historyWrapper = document.getElementById("history-wrapper");
+      const historyBody = document.getElementById("history-body");
+      const historyEmpty = document.getElementById("history-empty");
+      const refreshHistoryBtn = document.getElementById("refresh-history");
+
+      const BADGE_POR_CLASSE = {
+        baixo: ["bg-emerald-100", "text-emerald-800"],
+        alto: ["bg-rose-100", "text-rose-800"],
+      };
+
+      const MENSAGENS_PYDANTIC = {
+        missing: () => "é obrigatório",
+        greater_than_equal: (ctx) => `deve ser maior ou igual a ${ctx.ge}`,
+        less_than_equal: (ctx) => `deve ser menor ou igual a ${ctx.le}`,
+        greater_than: (ctx) => `deve ser maior que ${ctx.gt}`,
+        less_than: (ctx) => `deve ser menor que ${ctx.lt}`,
+        int_parsing: () => "deve ser um número inteiro",
+        int_from_float: () => "deve ser um número inteiro",
+        int_type: () => "deve ser um número inteiro",
+        float_parsing: () => "deve ser um número",
+        float_type: () => "deve ser um número",
+      };
+
+      const ROTULOS = Object.fromEntries(
+        inputs.map((el) => [el.name, el.dataset.label || el.name])
+      );
+
+      function limparErros() {
+        form.querySelectorAll("[data-field-error]").forEach((el) => el.remove());
+        inputs.forEach((el) => el.classList.remove("border-rose-400", "focus:ring-rose-200"));
+        ocultarAlerta();
+      }
+
+      function mostrarErroDeCampo(input, mensagem) {
+        if (!input) return;
+        input.classList.add("border-rose-400", "focus:ring-rose-200");
+        const id = `erro-${input.name}`;
+        let paragrafo = document.getElementById(id);
+        if (!paragrafo) {
+          paragrafo = document.createElement("p");
+          paragrafo.id = id;
+          paragrafo.dataset.fieldError = "true";
+          paragrafo.className = "mt-1 text-xs font-medium text-rose-600";
+          input.insertAdjacentElement("afterend", paragrafo);
+        }
+        paragrafo.textContent = mensagem;
+      }
+
+      function mostrarAlerta(mensagem) {
+        alertBox.textContent = mensagem;
+        alertBox.classList.remove("hidden");
+      }
+
+      function ocultarAlerta() {
+        alertBox.textContent = "";
+        alertBox.classList.add("hidden");
+      }
+
+      function encontrarInput(nome) {
+        return inputs.find((el) => el.name === nome);
+      }
+
+      // Validação no cliente, com mensagens em português
+      function coletarPayload() {
+        const payload = {};
+        let valido = true;
+
+        for (const input of inputs) {
+          const rotulo = input.dataset.label;
+          const bruto = input.value.trim();
+          const opcional = input.dataset.optional === "true";
+
+          if (bruto === "") {
+            if (opcional) continue;
+            mostrarErroDeCampo(input, `${rotulo} é obrigatório.`);
+            valido = false;
+            continue;
+          }
+
+          const numero = Number(bruto);
+          if (!Number.isFinite(numero)) {
+            mostrarErroDeCampo(input, `${rotulo} deve ser um número.`);
+            valido = false;
+            continue;
+          }
+
+          const min = input.min === "" ? null : Number(input.min);
+          const max = input.max === "" ? null : Number(input.max);
+
+          if (min !== null && numero < min) {
+            mostrarErroDeCampo(input, `${rotulo} deve ser maior ou igual a ${min}.`);
+            valido = false;
+            continue;
+          }
+          if (max !== null && numero > max) {
+            mostrarErroDeCampo(input, `${rotulo} deve ser menor ou igual a ${max}.`);
+            valido = false;
+            continue;
+          }
+          if (input.step === "1" && !Number.isInteger(numero)) {
+            mostrarErroDeCampo(input, `${rotulo} deve ser um número inteiro.`);
+            valido = false;
+            continue;
+          }
+
+          payload[input.name] = input.step === "1" ? Math.trunc(numero) : numero;
+        }
+
+        return valido ? payload : null;
+      }
+
+      // Tradução dos erros de validação devolvidos pela API (HTTP 422)
+      function aplicarErrosDaApi(detalhes) {
+        if (!Array.isArray(detalhes) || detalhes.length === 0) {
+          mostrarAlerta("Não foi possível validar os dados enviados.");
+          return;
+        }
+
+        const naoMapeados = [];
+        for (const erro of detalhes) {
+          const campo = Array.isArray(erro.loc) ? erro.loc[erro.loc.length - 1] : null;
+          const input = campo ? encontrarInput(campo) : null;
+          const rotulo = ROTULOS[campo] || campo;
+
+          if (!input) {
+            naoMapeados.push(campo ? `${campo}: ${erro.msg}` : erro.msg);
+            continue;
+          }
+
+          const traduzir = MENSAGENS_PYDANTIC[erro.type];
+          const motivo = traduzir ? traduzir(erro.ctx || {}) : "valor inválido";
+          mostrarErroDeCampo(input, `${rotulo} ${motivo}.`);
+        }
+
+        if (naoMapeados.length > 0) {
+          mostrarAlerta(`Verifique os dados enviados: ${naoMapeados.join("; ")}`);
+        }
+      }
+
+      function formatarPorcentagem(valor) {
+        return `${(valor * 100).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}%`;
+      }
+
+      function definirBadge(classe) {
+        riskBadge.classList.remove(...BADGE_POR_CLASSE.baixo, ...BADGE_POR_CLASSE.alto);
+        riskBadge.classList.add(...BADGE_POR_CLASSE[classe]);
+        riskDot.classList.remove("bg-emerald-500", "bg-rose-500");
+        riskDot.classList.add(classe === "alto" ? "bg-rose-500" : "bg-emerald-500");
+      }
+
+      function renderizar(dados) {
+        const probabilidade = Number(dados.probability_default) || 0;
+        const altoRisco = Number(dados.prediction) === 1;
+        const percentual = Math.min(Math.max(probabilidade * 100, 0), 100);
+
+        definirBadge(altoRisco ? "alto" : "baixo");
+        riskBadgeText.textContent = altoRisco ? "Inadimplente · Alto Risco" : "Adimplente · Baixo Risco";
+
+        probValue.textContent = formatarPorcentagem(probabilidade);
+        probValue.classList.toggle("text-rose-700", altoRisco);
+        probValue.classList.toggle("text-slate-900", !altoRisco);
+
+        probBar.style.width = `${percentual}%`;
+        probBar.classList.remove("bg-emerald-500", "bg-rose-500");
+        probBar.classList.add(altoRisco ? "bg-rose-500" : "bg-emerald-500");
+        probTrack.setAttribute("aria-valuenow", percentual.toFixed(2));
+
+        riskDescription.textContent = altoRisco
+          ? "A probabilidade estimada está acima do limiar de decisão: risco elevado de inadimplência."
+          : "A probabilidade estimada está abaixo do limiar de decisão: risco baixo de inadimplência.";
+
+        recId.textContent = `#${dados.id}`;
+        recTime.textContent = new Date(dados.created_at).toLocaleString("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "medium",
+        });
+        recThreshold.textContent = Number(dados.threshold).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        recModel.textContent = dados.model_name;
+
+        resultEmpty.classList.add("hidden");
+        resultContent.classList.remove("hidden");
+
+        carregarHistorico();
+      }
+
+      function definirCarregando(carregando) {
+        submitBtn.disabled = carregando;
+        spinner.classList.toggle("hidden", !carregando);
+        submitLabel.textContent = carregando ? "Calculando..." : "Calcular risco";
+      }
+
+      form.addEventListener("submit", async (evento) => {
+        evento.preventDefault();
+        limparErros();
+
+        const payload = coletarPayload();
+        if (!payload) {
+          mostrarAlerta("Corrija os campos destacados antes de calcular.");
+          return;
+        }
+
+        definirCarregando(true);
+        try {
+          const resposta = await fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (resposta.status === 422) {
+            const corpo = await resposta.json().catch(() => ({}));
+            aplicarErrosDaApi(corpo.detail);
+            return;
+          }
+
+          if (!resposta.ok) {
+            const corpo = await resposta.json().catch(() => ({}));
+            throw new Error(corpo.detail || `A API respondeu com o código ${resposta.status}.`);
+          }
+
+          renderizar(await resposta.json());
+        } catch (erro) {
+          mostrarAlerta(`Não foi possível calcular o risco. ${erro.message}`);
+        } finally {
+          definirCarregando(false);
+        }
+      });
+
+      // Restaura os valores de exemplo e limpa avisos
+      form.addEventListener("reset", () => {
+        setTimeout(() => {
+          limparErros();
+          resultContent.classList.add("hidden");
+          resultEmpty.classList.remove("hidden");
+          probBar.style.width = "0%";
+        }, 0);
+      });
+
+      // Remove o erro do campo assim que ele é corrigido
+      inputs.forEach((input) => {
+        input.addEventListener("input", () => {
+          const erro = document.getElementById(`erro-${input.name}`);
+          if (erro) erro.remove();
+          input.classList.remove("border-rose-400", "focus:ring-rose-200");
+        });
+      });
+
+      // ------------------------- Histórico de avaliações -------------------------
+      function formatarDataHora(valor) {
+        return new Date(valor).toLocaleString("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "medium",
+        });
+      }
+
+      function criarCelula(texto, classe) {
+        const celula = document.createElement("td");
+        celula.className = classe;
+        celula.textContent = texto;
+        return celula;
+      }
+
+      function renderizarHistorico(registros) {
+        historyBody.innerHTML = "";
+
+        if (!Array.isArray(registros) || registros.length === 0) {
+          historyWrapper.classList.add("hidden");
+          historyEmpty.textContent = "Nenhuma avaliação registrada ainda.";
+          historyEmpty.classList.remove("hidden");
+          return;
+        }
+
+        for (const registro of registros) {
+          const altoRisco = Number(registro.prediction) === 1;
+          const linha = document.createElement("tr");
+
+          linha.appendChild(criarCelula(`#${registro.id}`, "whitespace-nowrap px-5 py-3 font-medium text-slate-900 sm:px-6"));
+          linha.appendChild(criarCelula(formatarDataHora(registro.created_at), "whitespace-nowrap px-5 py-3 text-slate-600"));
+          linha.appendChild(
+            criarCelula(formatarPorcentagem(Number(registro.probability_default) || 0), "whitespace-nowrap px-5 py-3 text-slate-700")
+          );
+
+          const celulaClasse = document.createElement("td");
+          celulaClasse.className = "whitespace-nowrap px-5 py-3 sm:pr-6";
+          const selo = document.createElement("span");
+          selo.className = altoRisco
+            ? "inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-800"
+            : "inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800";
+          selo.textContent = altoRisco ? "Inadimplente · Alto Risco" : "Adimplente · Baixo Risco";
+          celulaClasse.appendChild(selo);
+          linha.appendChild(celulaClasse);
+
+          historyBody.appendChild(linha);
+        }
+
+        historyEmpty.classList.add("hidden");
+        historyWrapper.classList.remove("hidden");
+      }
+
+      async function carregarHistorico() {
+        try {
+          const resposta = await fetch("/predictions?limit=10");
+          if (!resposta.ok) {
+            throw new Error(`A API respondeu com o código ${resposta.status}.`);
+          }
+          renderizarHistorico(await resposta.json());
+        } catch (erro) {
+          historyWrapper.classList.add("hidden");
+          historyEmpty.textContent = "Não foi possível carregar o histórico agora.";
+          historyEmpty.classList.remove("hidden");
+        }
+      }
+
+      refreshHistoryBtn.addEventListener("click", carregarHistorico);
+      carregarHistorico();
+    </script>
+  </body>
+</html>
